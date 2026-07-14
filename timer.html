@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Timer + Секундомер с миллисекундами</title>
+    <style>
+        /* ===== ОБЩИЕ СТИЛИ ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 40px;
+            padding: 40px 50px;
+            max-width: 750px;
+            width: 100%;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2rem;
+            font-weight: 300;
+            color: #fff;
+            letter-spacing: 4px;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            margin-bottom: 25px;
+        }
+
+        /* ===== ПЕРЕКЛЮЧАТЕЛЬ РЕЖИМОВ ===== */
+        .mode-switcher {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 25px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 6px;
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+
+        .mode-btn {
+            padding: 10px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.5);
+            letter-spacing: 1px;
+            flex: 1;
+        }
+
+        .mode-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4);
+        }
+
+        /* ===== ДИСПЛЕЙ ВРЕМЕНИ ===== */
+        #timeDisplay {
+            font-size: 4.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 20px 30px;
+            border-radius: 30px;
+            display: inline-block;
+            min-width: 380px;
+            letter-spacing: 4px;
+            font-variant-numeric: tabular-nums;
+            box-shadow: inset 0 4px 15px rgba(0, 0, 0, 0.4);
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+            font-size: 4.2rem;
+        }
+
+        #timeDisplay .ms {
+            font-size: 2.2rem;
+            color: #a29bfe;
+            letter-spacing: 2px;
+        }
+
+        /* ===== СТАТУС ===== */
+        #status {
+            font-size: 1.1rem;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 25px;
+            min-height: 30px;
+            transition: 0.3s;
+        }
+
+        /* ===== НАСТРОЙКА ТАЙМЕРА ===== */
+        .settings {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px 20px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+        }
+
+        .settings.hidden {
+            display: none;
+        }
+
+        .settings .time-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .settings label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+            font-weight: 300;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .settings input {
+            width: 50px;
+            padding: 7px 5px;
+            font-size: 1rem;
+            text-align: center;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            font-weight: 600;
+            outline: 2px solid rgba(255, 255, 255, 0.1);
+            transition: 0.3s;
+        }
+
+        .settings input:focus {
+            outline: 2px solid #6c5ce7;
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .settings input::-webkit-inner-spin-button {
+            opacity: 1;
+        }
+
+        .settings .separator {
+            color: rgba(255, 255, 255, 0.3);
+            font-size: 1.5rem;
+            font-weight: 100;
+            padding: 0 2px;
+        }
+
+        /* ===== КНОПКИ ===== */
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .buttons button {
+            padding: 12px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            letter-spacing: 1px;
+            flex: 1 1 auto;
+            min-width: 85px;
+            background: rgba(255, 255, 255, 0.06);
+            color: #fff;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .buttons button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .buttons button:active {
+            transform: scale(0.96);
+        }
+
+        #startBtn {
+            background: linear-gradient(135deg, #00b894, #00a86b);
+            color: #fff;
+            border-color: transparent;
+        }
+
+        #startBtn:hover {
+            background: linear-gradient(135deg, #00d2a0, #00b894);
+        }
+
+        #pauseBtn {
+            background: linear-gradient(135deg, #fdcb6e, #f39c12);
+            color: #1a1a2e;
+            border-color: transparent;
+        }
+
+        #pauseBtn:hover {
+            background: linear-gradient(135deg, #ffe07a, #fdcb6e);
+        }
+
+        #resetBtn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        #resetBtn:hover {
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        #lapBtn {
+            background: rgba(108, 92, 231, 0.2);
+            border: 1px solid rgba(108, 92, 231, 0.3);
+            color: #a29bfe;
+        }
+
+        #lapBtn:hover {
+            background: rgba(108, 92, 231, 0.35);
+        }
+
+        /* ===== КРУГИ (СЕКУНДОМЕР) ===== */
+        .laps-container {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 5px 10px;
+            border-radius: 15px;
+            background: rgba(0, 0, 0, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: 0.3s;
+        }
+
+        .laps-container.hidden {
+            display: none;
+        }
+
+        .laps-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .laps-container::-webkit-scrollbar-thumb {
+            background: rgba(108, 92, 231, 0.4);
+            border-radius: 10px;
+        }
+
+        .lap-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 15px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .lap-item:last-child {
+            border-bottom: none;
+        }
+
+        .lap-item .lap-number {
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 300;
+        }
+
+        .lap-item .lap-time {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .lap-item .lap-diff {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 0.85rem;
+        }
+
+        .lap-item .lap-ms {
+            color: #a29bfe;
+            font-size: 0.8rem;
+        }
+
+        /* ===== АДАПТИВ ===== */
+        @media (max-width: 600px) {
+            .container {
+                padding: 25px 15px;
+                border-radius: 30px;
+            }
+
+            #timeDisplay {
+                font-size: 3rem;
+                min-width: auto;
+                padding: 15px 20px;
+                letter-spacing: 2px;
+            }
+
+            #timeDisplay .ms {
+                font-size: 1.6rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .settings {
+                padding: 10px 12px;
+                gap: 6px;
+            }
+
+            .settings input {
+                width: 40px;
+                font-size: 0.85rem;
+                padding: 5px 3px;
+            }
+
+            .settings .separator {
+                font-size: 1.2rem;
+            }
+
+            .buttons button {
+                padding: 10px 16px;
+                font-size: 0.85rem;
+                min-width: 60px;
+            }
+
+            .mode-btn {
+                padding: 8px 15px;
+                font-size: 0.85rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            #timeDisplay {
+                font-size: 2.2rem;
+                letter-spacing: 1px;
+                min-width: auto;
+            }
+
+            #timeDisplay .ms {
+                font-size: 1.2rem;
+            }
+
+            .settings input {
+                width: 32px;
+                font-size: 0.75rem;
+            }
+
+            .settings label {
+                font-size: 0.65rem;
+            }
+
+            .buttons button {
+                padding: 8px 12px;
+                font-size: 0.75rem;
+                min-width: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+
+        <h1>📚 Study Timer</h1>
+        <div class="subtitle">таймер + секундомер с миллисекундами</div>
+
+        <!-- ПЕРЕКЛЮЧАТЕЛЬ -->
+        <div class="mode-switcher">
+            <button class="mode-btn active" data-mode="timer">⏱ Таймер</button>
+            <button class="mode-btn" data-mode="stopwatch">⏲ Секундомер</button>
+        </div>
+
+        <!-- ДИСПЛЕЙ -->
+        <div id="timeDisplay">
+            <span id="mainTime">00:25:00</span>
+            <span class="ms" id="msDisplay">.00</span>
+        </div>
+
+        <!-- СТАТУС -->
+        <div id="status">⏳ Готов к работе</div>
+
+        <!-- НАСТРОЙКА ТАЙМЕРА -->
+        <div class="settings" id="timerSettings">
+            <div class="time-group">
+                <label for="hoursInput">Ч</label>
+                <input type="number" id="hoursInput" value="0" min="0" max="99">
+            </div>
+            <span class="separator">:</span>
+            <div class="time-group">
+                <label for="minutesInput">М</label>
+                <input type="number" id="minutesInput" value="25" min="0" max="59">
+            </div>
+            <span class="separator">:</span>
+            <div class="time-group">
+                <label for="secondsInput">С</label>
+                <input type="number" id="secondsInput" value="0" min="0" max="59">
+            </div>
+        </div>
+
+        <!-- КНОПКИ -->
+        <div class="buttons">
+            <button id="startBtn">▶ Старт</button>
+            <button id="pauseBtn">⏸ Пауза</button>
+            <button id="resetBtn">⟲ Сброс</button>
+            <button id="lapBtn" class="hidden">⏺ Круг</button>
+        </div>
+
+        <!-- КРУГИ (СЕКУНДОМЕР) -->
+        <div class="laps-container hidden" id="lapsContainer"></div>
+
+    </div>
+
+    <script>
+        // ============================================================
+        //  ЛОГИКА
+        // ============================================================
+
+        // ---------- ЭЛЕМЕНТЫ ----------
+        const mainTimeDisplay = document.getElementById('mainTime');
+        const msDisplay = document.getElementById('msDisplay');
+        const statusDisplay = document.getElementById('status');
+        const hoursInput = document.getElementById('hoursInput');
+        const minutesInput = document.getElementById('minutesInput');
+        const secondsInput = document.getElementById('secondsInput');
+        const timerSettings = document.getElementById('timerSettings');
+        const lapsContainer = document.getElementById('lapsContainer');
+        const lapBtn = document.getElementById('lapBtn');
+
+        const startBtn = document.getElementById('startBtn');
+        const pauseBtn = document.getElementById('pauseBtn');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // ---------- ПЕРЕМЕННЫЕ ----------
+        let timerInterval = null;
+        let totalSeconds = 25 * 60;
+        let isRunning = false;
+        let isPaused = false;
+        let currentMode = 'timer'; // 'timer' или 'stopwatch'
+
+        // Для секундомера (в миллисекундах)
+        let stopwatchMs = 0;
+        let lapCount = 0;
+        let lastLapMs = 0;
+        let startTime = 0;
+        let elapsedMs = 0;
+
+        // ---------- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----------
+        function formatTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function formatTimeMs(totalMs) {
+            const seconds = Math.floor(totalMs / 1000);
+            const ms = Math.floor((totalMs % 1000) / 10);
+            return {
+                main: formatTime(seconds),
+                ms: String(ms).padStart(2, '0')
+            };
+        }
+
+        function updateDisplay() {
+            if (currentMode === 'timer') {
+                const formatted = formatTime(totalSeconds);
+                mainTimeDisplay.textContent = formatted;
+                msDisplay.textContent = '.00';
+            } else {
+                const formatted = formatTimeMs(stopwatchMs);
+                mainTimeDisplay.textContent = formatted.main;
+                msDisplay.textContent = '.' + formatted.ms;
+            }
+        }
+
+        function getTotalSecondsFromInputs() {
+            const h = parseInt(hoursInput.value) || 0;
+            const m = parseInt(minutesInput.value) || 0;
+            const s = parseInt(secondsInput.value) || 0;
+            return h * 3600 + m * 60 + s;
+        }
+
+        function loadTimerFromInputs() {
+            totalSeconds = getTotalSecondsFromInputs();
+            if (totalSeconds < 0) totalSeconds = 0;
+            updateDisplay();
+        }
+
+        // ---------- ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ ----------
+        function switchMode(mode) {
+            if (isRunning) {
+                stopTimer();
+                isRunning = false;
+                isPaused = false;
+            }
+
+            currentMode = mode;
+
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.dataset.mode === mode) btn.classList.add('active');
+            });
+
+            if (mode === 'timer') {
+                timerSettings.classList.remove('hidden');
+                lapBtn.classList.add('hidden');
+                lapBtn.style.display = 'none';
+                lapsContainer.classList.add('hidden');
+                loadTimerFromInputs();
+                statusDisplay.textContent = '⏳ Готов к работе';
+                statusDisplay.style.color = 'rgba(255,255,255,0.6)';
+            } else {
+                timerSettings.classList.add('hidden');
+                lapBtn.classList.remove('hidden');
+                lapBtn.style.display = 'block';
+                lapsContainer.classList.remove('hidden');
+                stopwatchMs = 0;
+                lapCount = 0;
+                lastLapMs = 0;
+                lapsContainer.innerHTML = '';
+                updateDisplay();
+                statusDisplay.textContent = '⏱ Секундомер готов';
+                statusDisplay.style.color = 'rgba(255,255,255,0.6)';
+            }
+        }
+
+        // ---------- ОСТАНОВКА ТАЙМЕРА ----------
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            isRunning = false;
+            isPaused = false;
+        }
+
+        // ---------- СТАРТ ----------
+        function startTimer() {
+            if (isRunning && !isPaused) return;
+
+            if (currentMode === 'timer') {
+                if (!isRunning) {
+                    loadTimerFromInputs();
+                    if (totalSeconds === 0) {
+                        statusDisplay.textContent = '⚠️ Установите время!';
+                        statusDisplay.style.color = '#fdcb6e';
+                        return;
+                    }
+                }
+                statusDisplay.textContent = '🔴 Учимся!';
+                statusDisplay.style.color = '#00d2a0';
+            } else {
+                // Секундомер
+                if (!isRunning) {
+                    startTime = Date.now() - elapsedMs;
+                } else if (isPaused) {
+                    startTime = Date.now() - elapsedMs;
+                }
+                statusDisplay.textContent = '⏱ Идёт отсчёт...';
+                statusDisplay.style.color = '#00d2a0';
+            }
+
+            isRunning = true;
+            isPaused = false;
+
+            if (timerInterval) clearInterval(timerInterval);
+
+            timerInterval = setInterval(() => {
+                if (currentMode === 'timer') {
+                    if (totalSeconds <= 0) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        isRunning = false;
+                        statusDisplay.textContent = '✅ Время вышло! Отдохни.';
+                        statusDisplay.style.color = '#fdcb6e';
+                        alert('⏰ Время вышло! Сделай перерыв.');
+                        return;
+                    }
+                    totalSeconds--;
+                    updateDisplay();
+                } else {
+                    // Секундомер с миллисекундами
+                    const now = Date.now();
+                    elapsedMs = now - startTime;
+                    stopwatchMs = elapsedMs;
+                    updateDisplay();
+                }
+            }, currentMode === 'timer' ? 1000 : 10);
+        }
+
+        // ---------- ПАУЗА ----------
+        function pauseTimer() {
+            if (!isRunning) return;
+            if (isPaused) return;
+
+            clearInterval(timerInterval);
+            timerInterval = null;
+            isPaused = true;
+
+            if (currentMode === 'timer') {
+                statusDisplay.textContent = '⏸ Пауза';
+                statusDisplay.style.color = '#fdcb6e';
+            } else {
+                // Сохраняем прошедшее время
+                elapsedMs = stopwatchMs;
+                statusDisplay.textContent = '⏸ На паузе';
+                statusDisplay.style.color = '#fdcb6e';
+            }
+        }
+
+        // ---------- СБРОС ----------
+        function resetTimer() {
+            stopTimer();
+            isRunning = false;
+            isPaused = false;
+
+            if (currentMode === 'timer') {
+                loadTimerFromInputs();
+                statusDisplay.textContent = '⏳ Готов к работе';
+                statusDisplay.style.color = 'rgba(255,255,255,0.6)';
+            } else {
+                stopwatchMs = 0;
+                elapsedMs = 0;
+                lapCount = 0;
+                lastLapMs = 0;
+                lapsContainer.innerHTML = '';
+                updateDisplay();
+                statusDisplay.textContent = '⏱ Секундомер готов';
+                statusDisplay.style.color = 'rgba(255,255,255,0.6)';
+            }
+        }
+
+        // ---------- КРУГ (СЕКУНДОМЕР) ----------
+        function addLap() {
+            if (!isRunning || currentMode !== 'stopwatch') return;
+
+            lapCount++;
+            const currentMs = stopwatchMs;
+            const lapMs = currentMs - lastLapMs;
+            lastLapMs = currentMs;
+
+            const lapItem = document.createElement('div');
+            lapItem.className = 'lap-item';
+
+            const currentFormatted = formatTimeMs(currentMs);
+            const lapFormatted = formatTimeMs(lapMs);
+
+            lapItem.innerHTML = `
+                <span class="lap-number">Круг ${lapCount}</span>
+                <span class="lap-time">${lapFormatted.main}<span class="lap-ms">.${lapFormatted.ms}</span></span>
+                <span class="lap-diff">${currentFormatted.main}<span class="lap-ms">.${currentFormatted.ms}</span></span>
+            `;
+            lapsContainer.prepend(lapItem);
+
+            if (lapsContainer.children.length > 100) {
+                lapsContainer.removeChild(lapsContainer.lastChild);
+            }
+        }
+
+        // ---------- СОБЫТИЯ ПОЛЕЙ ВВОДА ----------
+        function onInputChange() {
+            if (parseInt(minutesInput.value) > 59) minutesInput.value = 59;
+            if (parseInt(secondsInput.value) > 59) secondsInput.value = 59;
+            if (parseInt(minutesInput.value) < 0) minutesInput.value = 0;
+            if (parseInt(secondsInput.value) < 0) secondsInput.value = 0;
+            if (parseInt(hoursInput.value) < 0) hoursInput.value = 0;
+
+            if (isRunning) {
+                resetTimer();
+            } else {
+                loadTimerFromInputs();
+                statusDisplay.textContent = '⏳ Готов к работе';
+                statusDisplay.style.color = 'rgba(255,255,255,0.6)';
+            }
+        }
+
+        hoursInput.addEventListener('change', onInputChange);
+        minutesInput.addEventListener('change', onInputChange);
+        secondsInput.addEventListener('change', onInputChange);
+
+        // ---------- КНОПКИ ----------
+        startBtn.addEventListener('click', startTimer);
+        pauseBtn.addEventListener('click', pauseTimer);
+        resetBtn.addEventListener('click', resetTimer);
+        lapBtn.addEventListener('click', addLap);
+
+        // ---------- ПЕРЕКЛЮЧЕНИЕ РЕЖИМОВ ----------
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                switchMode(btn.dataset.mode);
+            });
+        });
+
+        // ---------- СТАРТОВЫЙ ДИСПЛЕЙ ----------
+        loadTimerFromInputs();
+    </script>
+
+</body>
+</html>
